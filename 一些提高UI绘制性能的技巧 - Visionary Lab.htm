@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<!-- saved from url=(0057)http://vizlabxt.github.io/blog/2013/07/12/custom-drawing/ -->
+<html class="js video maskImage placeholder" lang="en"><!--<![endif]--><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <title>一些提高UI绘制性能的技巧 - Visionary Lab</title>
+  <meta name="author" content="vizlabxt">
+
+  
+  <meta name="description" content="所有文章均为作者原创，转载请注明出处 今天讨论下UI绘制的性能问题，通常来说，如果熟悉下面列出的内容基本上能解决80%以上的性能问题了： UIView是如何渲染到屏幕上的 WWDC2011:Session 318 - iOS Performance in Depth WWDC2012: …">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width,minimum-scale=1,maximum-scale=1">
+
+  
+  <link rel="canonical" href="http://vizlabxt.github.io/blog/2013/07/12/custom-drawing">
+  <link href="http://vizlabxt.github.io/favicon.png" rel="icon">
+  <link href="./一些提高UI绘制性能的技巧 - Visionary Lab_files/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="http://vizlabxt.github.io/atom.xml" rel="alternate" title="Visionary Lab" type="application/atom+xml">
+  <script src="./一些提高UI绘制性能的技巧 - Visionary Lab_files/modernizr-2.0.js"></script>
+  <script src="./一些提高UI绘制性能的技巧 - Visionary Lab_files/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="./一些提高UI绘制性能的技巧 - Visionary Lab_files/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="./一些提高UI绘制性能的技巧 - Visionary Lab_files/css" rel="stylesheet" type="text/css">
+<link href="./一些提高UI绘制性能的技巧 - Visionary Lab_files/css(1)" rel="stylesheet" type="text/css">
+<link href="./一些提高UI绘制性能的技巧 - Visionary Lab_files/css(2)" rel="stylesheet" type="text/css">
+<!--- MathJax Configuration -->
+<script type="text/javascript" src="./一些提高UI绘制性能的技巧 - Visionary Lab_files/MathJax.js"></script>
+  
+
+<style type="text/css">.MathJax_Hover_Frame {border-radius: .25em; -webkit-border-radius: .25em; -moz-border-radius: .25em; -khtml-border-radius: .25em; box-shadow: 0px 0px 15px #83A; -webkit-box-shadow: 0px 0px 15px #83A; -moz-box-shadow: 0px 0px 15px #83A; -khtml-box-shadow: 0px 0px 15px #83A; border: 1px solid #A6D ! important; display: inline-block; position: absolute}
+.MathJax_Menu_Button .MathJax_Hover_Arrow {position: absolute; cursor: pointer; display: inline-block; border: 2px solid #AAA; border-radius: 4px; -webkit-border-radius: 4px; -moz-border-radius: 4px; -khtml-border-radius: 4px; font-family: 'Courier New',Courier; font-size: 9px; color: #F0F0F0}
+.MathJax_Menu_Button .MathJax_Hover_Arrow span {display: block; background-color: #AAA; border: 1px solid; border-radius: 3px; line-height: 0; padding: 4px}
+.MathJax_Hover_Arrow:hover {color: white!important; border: 2px solid #CCC!important}
+.MathJax_Hover_Arrow:hover span {background-color: #CCC!important}
+</style><style type="text/css">#MathJax_About {position: fixed; left: 50%; width: auto; text-align: center; border: 3px outset; padding: 1em 2em; background-color: #DDDDDD; color: black; cursor: default; font-family: message-box; font-size: 120%; font-style: normal; text-indent: 0; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal; word-wrap: normal; white-space: nowrap; float: none; z-index: 201; border-radius: 15px; -webkit-border-radius: 15px; -moz-border-radius: 15px; -khtml-border-radius: 15px; box-shadow: 0px 10px 20px #808080; -webkit-box-shadow: 0px 10px 20px #808080; -moz-box-shadow: 0px 10px 20px #808080; -khtml-box-shadow: 0px 10px 20px #808080; filter: progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}
+#MathJax_About.MathJax_MousePost {outline: none}
+.MathJax_Menu {position: absolute; background-color: white; color: black; width: auto; padding: 5px 0px; border: 1px solid #CCCCCC; margin: 0; cursor: default; font: menu; text-align: left; text-indent: 0; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal; word-wrap: normal; white-space: nowrap; float: none; z-index: 201; border-radius: 5px; -webkit-border-radius: 5px; -moz-border-radius: 5px; -khtml-border-radius: 5px; box-shadow: 0px 10px 20px #808080; -webkit-box-shadow: 0px 10px 20px #808080; -moz-box-shadow: 0px 10px 20px #808080; -khtml-box-shadow: 0px 10px 20px #808080; filter: progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}
+.MathJax_MenuItem {padding: 1px 2em; background: transparent}
+.MathJax_MenuArrow {position: absolute; right: .5em; padding-top: .25em; color: #666666; font-size: .75em}
+.MathJax_MenuActive .MathJax_MenuArrow {color: white}
+.MathJax_MenuArrow.RTL {left: .5em; right: auto}
+.MathJax_MenuCheck {position: absolute; left: .7em}
+.MathJax_MenuCheck.RTL {right: .7em; left: auto}
+.MathJax_MenuRadioCheck {position: absolute; left: .7em}
+.MathJax_MenuRadioCheck.RTL {right: .7em; left: auto}
+.MathJax_MenuLabel {padding: 1px 2em 3px 1.33em; font-style: italic}
+.MathJax_MenuRule {border-top: 1px solid #DDDDDD; margin: 4px 3px}
+.MathJax_MenuDisabled {color: GrayText}
+.MathJax_MenuActive {background-color: #606872; color: white}
+.MathJax_MenuDisabled:focus, .MathJax_MenuLabel:focus {background-color: #E8E8E8}
+.MathJax_ContextMenu:focus {outline: none}
+.MathJax_ContextMenu .MathJax_MenuItem:focus {outline: none}
+#MathJax_AboutClose {top: .2em; right: .2em}
+.MathJax_Menu .MathJax_MenuClose {top: -10px; left: -10px}
+.MathJax_MenuClose {position: absolute; cursor: pointer; display: inline-block; border: 2px solid #AAA; border-radius: 18px; -webkit-border-radius: 18px; -moz-border-radius: 18px; -khtml-border-radius: 18px; font-family: 'Courier New',Courier; font-size: 24px; color: #F0F0F0}
+.MathJax_MenuClose span {display: block; background-color: #AAA; border: 1.5px solid; border-radius: 18px; -webkit-border-radius: 18px; -moz-border-radius: 18px; -khtml-border-radius: 18px; line-height: 0; padding: 8px 0 6px}
+.MathJax_MenuClose:hover {color: white!important; border: 2px solid #CCC!important}
+.MathJax_MenuClose:hover span {background-color: #CCC!important}
+.MathJax_MenuClose:hover:focus {outline: none}
+</style><style type="text/css">.MathJax_Preview .MJXf-math {color: inherit!important}
+</style><style type="text/css">.MJX_Assistive_MathML {position: absolute!important; top: 0; left: 0; clip: rect(1px, 1px, 1px, 1px); padding: 1px 0 0 0!important; border: 0!important; height: 1px!important; width: 1px!important; overflow: hidden!important; display: block!important; -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none}
+.MJX_Assistive_MathML.MJX_Assistive_MathML_Block {width: 100%!important}
+</style><style type="text/css">#MathJax_Zoom {position: absolute; background-color: #F0F0F0; overflow: auto; display: block; z-index: 301; padding: .5em; border: 1px solid black; margin: 0; font-weight: normal; font-style: normal; text-align: left; text-indent: 0; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal; word-wrap: normal; white-space: nowrap; float: none; -webkit-box-sizing: content-box; -moz-box-sizing: content-box; box-sizing: content-box; box-shadow: 5px 5px 15px #AAAAAA; -webkit-box-shadow: 5px 5px 15px #AAAAAA; -moz-box-shadow: 5px 5px 15px #AAAAAA; -khtml-box-shadow: 5px 5px 15px #AAAAAA; filter: progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}
+#MathJax_ZoomOverlay {position: absolute; left: 0; top: 0; z-index: 300; display: inline-block; width: 100%; height: 100%; border: 0; padding: 0; margin: 0; background-color: white; opacity: 0; filter: alpha(opacity=0)}
+#MathJax_ZoomFrame {position: relative; display: inline-block; height: 0; width: 0}
+#MathJax_ZoomEventTrap {position: absolute; left: 0; top: 0; z-index: 302; display: inline-block; border: 0; padding: 0; margin: 0; background-color: white; opacity: 0; filter: alpha(opacity=0)}
+</style><style type="text/css">.MathJax_Preview {color: #888}
+#MathJax_Message {position: fixed; left: 1em; bottom: 1.5em; background-color: #E6E6E6; border: 1px solid #959595; margin: 0px; padding: 2px 8px; z-index: 102; color: black; font-size: 80%; width: auto; white-space: nowrap}
+#MathJax_MSIE_Frame {position: absolute; top: 0; left: 0; width: 0px; z-index: 101; border: 0px; margin: 0px; padding: 0px}
+.MathJax_Error {color: #CC0000; font-style: italic}
+</style><style type="text/css">.MJXp-script {font-size: .8em}
+.MJXp-right {-webkit-transform-origin: right; -moz-transform-origin: right; -ms-transform-origin: right; -o-transform-origin: right; transform-origin: right}
+.MJXp-bold {font-weight: bold}
+.MJXp-italic {font-style: italic}
+.MJXp-scr {font-family: MathJax_Script,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-frak {font-family: MathJax_Fraktur,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-sf {font-family: MathJax_SansSerif,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-cal {font-family: MathJax_Caligraphic,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-mono {font-family: MathJax_Typewriter,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-largeop {font-size: 150%}
+.MJXp-largeop.MJXp-int {vertical-align: -.2em}
+.MJXp-math {display: inline-block; line-height: 1.2; text-indent: 0; font-family: 'Times New Roman',Times,STIXGeneral,serif; white-space: nowrap; border-collapse: collapse}
+.MJXp-display {display: block; text-align: center; margin: 1em 0}
+.MJXp-math span {display: inline-block}
+.MJXp-box {display: block!important; text-align: center}
+.MJXp-box:after {content: " "}
+.MJXp-rule {display: block!important; margin-top: .1em}
+.MJXp-char {display: block!important}
+.MJXp-mo {margin: 0 .15em}
+.MJXp-mfrac {margin: 0 .125em; vertical-align: .25em}
+.MJXp-denom {display: inline-table!important; width: 100%}
+.MJXp-denom > * {display: table-row!important}
+.MJXp-surd {vertical-align: top}
+.MJXp-surd > * {display: block!important}
+.MJXp-script-box > *  {display: table!important; height: 50%}
+.MJXp-script-box > * > * {display: table-cell!important; vertical-align: top}
+.MJXp-script-box > *:last-child > * {vertical-align: bottom}
+.MJXp-script-box > * > * > * {display: block!important}
+.MJXp-mphantom {visibility: hidden}
+.MJXp-munderover {display: inline-table!important}
+.MJXp-over {display: inline-block!important; text-align: center}
+.MJXp-over > * {display: block!important}
+.MJXp-munderover > * {display: table-row!important}
+.MJXp-mtable {vertical-align: .25em; margin: 0 .125em}
+.MJXp-mtable > * {display: inline-table!important; vertical-align: middle}
+.MJXp-mtr {display: table-row!important}
+.MJXp-mtd {display: table-cell!important; text-align: center; padding: .5em 0 0 .5em}
+.MJXp-mtr > .MJXp-mtd:first-child {padding-left: 0}
+.MJXp-mtr:first-child > .MJXp-mtd {padding-top: 0}
+.MJXp-mlabeledtr {display: table-row!important}
+.MJXp-mlabeledtr > .MJXp-mtd:first-child {padding-left: 0}
+.MJXp-mlabeledtr:first-child > .MJXp-mtd {padding-top: 0}
+.MJXp-merror {background-color: #FFFF88; color: #CC0000; border: 1px solid #CC0000; padding: 1px 3px; font-style: normal; font-size: 90%}
+.MJXp-scale0 {-webkit-transform: scaleX(.0); -moz-transform: scaleX(.0); -ms-transform: scaleX(.0); -o-transform: scaleX(.0); transform: scaleX(.0)}
+.MJXp-scale1 {-webkit-transform: scaleX(.1); -moz-transform: scaleX(.1); -ms-transform: scaleX(.1); -o-transform: scaleX(.1); transform: scaleX(.1)}
+.MJXp-scale2 {-webkit-transform: scaleX(.2); -moz-transform: scaleX(.2); -ms-transform: scaleX(.2); -o-transform: scaleX(.2); transform: scaleX(.2)}
+.MJXp-scale3 {-webkit-transform: scaleX(.3); -moz-transform: scaleX(.3); -ms-transform: scaleX(.3); -o-transform: scaleX(.3); transform: scaleX(.3)}
+.MJXp-scale4 {-webkit-transform: scaleX(.4); -moz-transform: scaleX(.4); -ms-transform: scaleX(.4); -o-transform: scaleX(.4); transform: scaleX(.4)}
+.MJXp-scale5 {-webkit-transform: scaleX(.5); -moz-transform: scaleX(.5); -ms-transform: scaleX(.5); -o-transform: scaleX(.5); transform: scaleX(.5)}
+.MJXp-scale6 {-webkit-transform: scaleX(.6); -moz-transform: scaleX(.6); -ms-transform: scaleX(.6); -o-transform: scaleX(.6); transform: scaleX(.6)}
+.MJXp-scale7 {-webkit-transform: scaleX(.7); -moz-transform: scaleX(.7); -ms-transform: scaleX(.7); -o-transform: scaleX(.7); transform: scaleX(.7)}
+.MJXp-scale8 {-webkit-transform: scaleX(.8); -moz-transform: scaleX(.8); -ms-transform: scaleX(.8); -o-transform: scaleX(.8); transform: scaleX(.8)}
+.MJXp-scale9 {-webkit-transform: scaleX(.9); -moz-transform: scaleX(.9); -ms-transform: scaleX(.9); -o-transform: scaleX(.9); transform: scaleX(.9)}
+.MathJax_PHTML .noError {vertical-align: ; font-size: 90%; text-align: left; color: black; padding: 1px 3px; border: 1px solid}
+</style></head>
+
+<body class="collapse-sidebar sidebar-footer"><div id="MathJax_Message" style="display: none;"></div>
+  <header role="banner"><hgroup>
+  <h1><a href="http://vizlabxt.github.io/">Visionary Lab</a></h1>
+  
+    <h2>A Life  Learning Blog</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscribe" data-subscription="rss">
+<!--   <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS" target="_blank"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="25" height="25" viewbox="0 0 100 100"><path class="social" d="M 13.310204,73.332654 C 5.967347,73.332654 0,79.322448 0,86.621428 c 0,7.338776 5.967347,13.262246 13.310204,13.262246 7.370408,0 13.328572,-5.92245 13.328572,-13.262246 0,-7.29898 -5.958164,-13.288774 -13.328572,-13.288774 z M 0.01530612,33.978572 V 53.143878 C 12.493878,53.143878 24.229592,58.02347 33.068368,66.865306 41.894898,75.685714 46.767346,87.47449 46.767346,100 h 19.25 C 66.017346,63.592858 36.4,33.979592 0.01530612,33.978572 l 0,0 z M 0.03877552,0 V 19.17449 C 44.54796,19.17551 80.77551,55.437756 80.77551,100 H 100 C 100,44.87653 55.15102,0 0.03877552,0 z"></path></svg></a></li> -->
+  
+</ul>
+  
+  
+  
+  
+  
+<ul class="subscribe">
+  <li><a href="https://github.com/vizlabxt" rel="subscribe-github" title="@vizlabxt on GitHub" target="_blank"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="25" height="25" viewBox="0 0 100 100"><path class="social" d="M 50,0 C 22.385714,0 0,22.385714 0,50 0,77.614286 22.385714,100 50,100 77.614286,100 100,77.614286 100,50 100,22.385714 77.614286,0 50,0 z m 29.692858,79.692858 c -3.859184,3.859182 -8.351022,6.887754 -13.35,9.00306 -1.27041,0.536736 -2.560204,1.009184 -3.867348,1.415306 v -7.493878 c 0,-3.938774 -1.35102,-6.835714 -4.053062,-8.690816 1.692858,-0.163264 3.24694,-0.390816 4.663266,-0.683672 1.416326,-0.292858 2.913266,-0.716328 4.491838,-1.27041 1.57857,-0.55408 2.994896,-1.213264 4.247958,-1.97755 1.253062,-0.765306 2.458164,-1.758164 3.613266,-2.978572 1.155102,-1.220408 2.12449,-2.604082 2.905102,-4.15 0.780612,-1.545918 1.4,-3.40204 1.855102,-5.566326 0.455102,-2.164286 0.683674,-4.54898 0.683674,-7.153062 0,-5.045918 -1.643878,-9.341836 -4.931634,-12.890816 C 77.44796,33.35 77.285714,29.10204 75.463266,24.512244 l -1.22143,-0.145918 c -0.845918,-0.09796 -2.368366,0.260204 -4.565306,1.07449 -2.196938,0.814286 -4.663264,2.14796 -7.396938,4.004082 -3.87449,-1.07449 -7.893878,-1.611224 -12.061224,-1.611224 -4.19898,0 -8.203062,0.536734 -12.012246,1.611224 -1.72449,-1.17245 -3.361224,-2.139796 -4.907142,-2.905102 C 31.753062,25.77449 30.516326,25.254082 29.587756,24.97653 28.660204,24.7 27.79796,24.528572 27,24.463266 c -0.79796,-0.0653 -1.310204,-0.08062 -1.537756,-0.04898 -0.22755,0.03164 -0.390816,0.0653 -0.487754,0.09796 -1.82347,4.62245 -1.985714,8.87143 -0.487756,12.743878 -3.287754,3.54796 -4.931632,7.844898 -4.931632,12.890816 0,2.604082 0.227552,4.988776 0.683674,7.153062 0.456122,2.164286 1.07449,4.020408 1.855102,5.566326 0.780612,1.545918 1.75,2.929592 2.905102,4.15 1.155102,1.220408 2.360204,2.213266 3.613264,2.978572 1.253062,0.766326 2.669388,1.42449 4.24796,1.97755 1.578572,0.554082 3.07551,0.976532 4.491836,1.27041 1.416328,0.292856 2.970408,0.521428 4.663266,0.683672 -2.669388,1.82347 -4.004082,4.720408 -4.004082,8.690816 v 7.639796 C 36.536734,89.818368 35.083674,89.3 33.656122,88.695918 c -4.99898,-2.115306 -9.490816,-5.143878 -13.35,-9.00306 -3.859184,-3.859184 -6.887754,-8.351022 -9.00306,-13.35 C 9.1163263,61.171428 8.0071428,55.67347 8.0071428,50 c 0,-5.67347 1.1091835,-11.171428 3.2969392,-16.342858 2.115306,-4.998978 5.143878,-9.490816 9.00306,-13.35 3.859184,-3.859182 8.351022,-6.887754 13.35,-9.00306 C 38.828572,9.1163266 44.32653,8.0071428 50,8.0071428 c 5.67347,0 11.171428,1.1091838 16.342858,3.2969392 5,2.115306 9.490816,5.143878 13.35,9.00306 3.859182,3.859184 6.887754,8.351022 9.00306,13.35 2.186736,5.17245 3.295918,10.67041 3.295918,16.342858 0,5.672448 -1.109182,11.171428 -3.296938,16.342858 -2.115306,4.998978 -5.143878,9.490816 -9.00204,13.35 l 0,0 z"></path></svg></a></li>
+</ul>
+  
+  
+  
+<ul class="subscribe">
+  <li><a href="https://twitter.com/ecs_tee" rel="subscribe-twitter" title="@ecs_tee on Twitter" target="_blank"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="25" height="25" viewBox="0 0 512 512"><path class="social" d="M0.001,334.932c33.327,30.816,118.891,59.981,188.517-8.271c-12.52,1.955-22.972-0.416-30.913-8.269
+  c-7.531-7.465-7.945-15.182-3.914-22.202c3.275-5.725,10.184-9.741,16.977-13.934c-12.323,2.285-22.829,1.095-32.218-3.706
+  c-12.604-6.444-24.863-13.228-28.3-27.207c7.71-8.112,16.28-15.359,34.831-12.627c-17.45-5.83-33.087-13.429-44.41-24.815
+  c-11.028-11.091-12.163-18.302-13.932-26.996c9.632-3.567,19.688-5.421,30.478-4.353c-24.397-12.476-34.757-29.63-40.487-48.325
+  c-1.731-5.652-2.044-11.03-1.31-16.545c98.826,37.305,145.11,64.109,170.662,89.251c11.496-30.589,38.3-99.868,78.371-123.646
+  c0.191,3.77-1.309,7.837-4.357,12.189c11.863-6.609,21.125-17.188,37.445-16.98c-1.879,7.723-7.279,13.904-17.85,17.854
+  c10.662-4.084,21.463-7.545,32.65-9.578c10.375-1.881,10.229,6.304,4.355,10.444c-11.916,8.412-24.578,9.456-37.006,13.498
+  c38.105,0.949,69.266,18.994,93.604,58.343c8.088,13.074,13.52,26.149,14.807,40.487c16.254,4.563,32.426,5.494,48.76,2.61
+  c4.475-0.796,8.645-1.63,12.627-3.482c-6.354,9.529-13.686,17.356-23.947,20.899c-9.811,3.387-19.637,6.688-30.473,6.968
+  c17.641,6.675,37.082,7.045,57.033,5.659c-24.402,23.486-43.08,22.922-61.824,22.642c-8.221,34.703-25.025,69.315-60.52,101.005
+  c-46.559,41.569-96.678,61.397-148.457,65.742c-48.552,4.07-95.488,3.512-146.726-20.464
+  C56.486,393.349,24.648,368.884,0.001,334.932L0.001,334.932z"></path></svg></a></li>
+</ul>
+  
+  
+<ul class="subscribe">
+  <li><a href="https://linkedin.com/in/jaysonxt" rel="subscribe-linkedin" title="vizlabxt on LinkedIn" target="_blank"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="25" height="25" viewBox="0 0 731 1000"><path class="social" d="M158.75 865l-156.25 0l0 -521.25l156.25 0l0 521.25zm393.75 -505q87.5 0 133.125 56.25t45.625 153.75l0 295l-156.25 0l0 -278.75q0 -108.75 -76.25 -108.75 -61.25 0 -80 61.25l0 326.25l-156.25 0q2.5 -468.75 0 -521.25l123.75 0l10 103.75l2.5 0q53.75 -87.5 153.75 -87.5zm-552.5 -146.25q0 -78.75 81.25 -78.75 80 0 80 78.75 0 77.5 -80 77.5 -81.25 0 -81.25 -77.5z"></path></svg></a></li>
+</ul>
+  
+  
+  
+  
+  
+<fieldset class="mobile-nav"><select><option value="">Navigate…</option><option value="http://vizlabxt.github.io/">» Blog</option><option value="http://vizlabxt.github.io/blog/archives">» Archives</option><option value="http://vizlabxt.github.io/about">» About</option></select></fieldset><ul class="main-navigation">
+  <li><a href="http://vizlabxt.github.io/">Blog</a></li>
+  <li><a href="http://vizlabxt.github.io/blog/archives">Archives</a></li>
+  <li><a href="http://vizlabxt.github.io/about">About</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      
+        <h1 class="entry-title">一些提高UI绘制性能的技巧</h1>
+      
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class="entry-date" datetime="2013-07-12T00:00:00+08:00"><span class="date"><span class="date-month">Jul</span> <span class="date-day">12</span><span class="date-suffix">th</span>, <span class="date-year">2013</span></span> <span class="time">12:00 am</span></time>
+        
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p><em>所有文章均为作者原创，转载请注明出处</em></p>
+
+<p>今天讨论下UI绘制的性能问题，通常来说，如果熟悉下面列出的内容基本上能解决80%以上的性能问题了：</p>
+
+<ol>
+  <li>
+    <p><a href="http://vizlabxt.github.io/blog/2012/10/22/UIView-Rendering/">UIView是如何渲染到屏幕上的</a></p>
+  </li>
+  <li>
+    <p>WWDC2011:Session 318 - iOS Performance in Depth</p>
+  </li>
+  <li>
+    <p>WWDC2012:Session 238 - iOS App Performance_ Graphics and Animations</p>
+  </li>
+  <li>
+    <p>熟练Instrument的Time Profiler和Core Animation</p>
+  </li>
+</ol>
+
+<p>接下来讨论三个我认为有价值的点：</p>
+
+<ol>
+  <li>
+    <p>Twitter的这篇关于tableview优化的文章，是对还是错？</p>
+  </li>
+  <li>
+    <p>CoreText最佳性能优化方案</p>
+  </li>
+  <li>
+    <p>异步绘制</p>
+  </li>
+</ol>
+
+<h2 id="layer-trees-vs-flat-drawing">Layer Trees v.s. Flat Drawing</h2>
+
+<p>基本上，如果去优化UITableview的滚动性能，都会读到<a href="https://github.com/kennethreitz/osx-gcc-installer/">Twitter的这篇文章</a>。这篇文章其实就说了一件事：将cell上复杂的UI层次结构，简化为一个Layer。</p>
+
+<p>例如：要展示这样一个cell：</p>
+
+<p><a href="./一些提高UI绘制性能的技巧 - Visionary Lab_files/cell.png"><img class="alignnone size-full wp-image-251" alt="cell" src="./一些提高UI绘制性能的技巧 - Visionary Lab_files/cell.png" width="311" height="96"></a></p>
+
+<h3 id="section">传统的做法：</h3>
+
+<p>传统的做法是定义一个<code>cell</code>，在<code>cell</code>的<code>contentView</code>上添加UI元素：三个label，一个imagView：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tbody><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>
+<span class="line-number">22</span>
+<span class="line-number">23</span>
+<span class="line-number">24</span>
+<span class="line-number">25</span>
+<span class="line-number">26</span>
+<span class="line-number">27</span>
+<span class="line-number">28</span>
+<span class="line-number">29</span>
+<span class="line-number">30</span>
+<span class="line-number">31</span>
+<span class="line-number">32</span>
+<span class="line-number">33</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="k">@implementation</span> <span class="nc">ETTableViewDemoAppStoreCell</span>
+</span><span class="line">
+</span><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nf">initWithStyle:</span><span class="p">(</span><span class="n">UITableViewCellStyle</span><span class="p">)</span><span class="nv">style</span> <span class="nf">reuseIdentifier:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">reuseIdentifier</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line">    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="o">=</span><span class="p">[</span><span class="nb">super</span> <span class="nl">initWithStyle</span><span class="p">:</span><span class="n">style</span> <span class="nl">reuseIdentifier</span><span class="p">:</span><span class="n">reuseIdentifier</span><span class="p">])</span>
+</span><span class="line">    <span class="p">{</span>
+</span><span class="line">        <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">contentView</span> <span class="nl">addSubview</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">nameLabel</span><span class="p">];</span>
+</span><span class="line">        <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">contentView</span> <span class="nl">addSubview</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">priceLabel</span><span class="p">];</span>
+</span><span class="line">        <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">contentView</span> <span class="nl">addSubview</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">summaryLabel</span><span class="p">];</span>
+</span><span class="line">        <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">contentView</span> <span class="nl">addSubview</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">imgView</span><span class="p">];</span>
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line">    <span class="k">return</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line">
+</span><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setItem:</span><span class="p">(</span><span class="n">ETTableViewDemoAppStoreItem</span><span class="o">*</span> <span class="p">)</span><span class="nv">item</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line">    <span class="nb">self</span><span class="p">.</span><span class="n">nameLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">item</span><span class="p">.</span><span class="n">appName</span><span class="p">;</span>
+</span><span class="line">    <span class="nb">self</span><span class="p">.</span><span class="n">priceLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">item</span><span class="p">.</span><span class="n">appPrice</span><span class="p">;</span>
+</span><span class="line">    <span class="nb">self</span><span class="p">.</span><span class="n">summaryLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">item</span><span class="p">.</span><span class="n">appSummary</span><span class="p">;</span>
+</span><span class="line">    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">imgView</span> <span class="nl">setImageURL</span><span class="p">:</span><span class="n">item</span><span class="p">.</span><span class="n">appImageURL</span><span class="p">];</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line">
+</span><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">layoutSubviews</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line">    <span class="p">[</span><span class="nb">super</span> <span class="n">layoutSubviews</span><span class="p">];</span>
+</span><span class="line">
+</span><span class="line">    <span class="nb">self</span><span class="p">.</span><span class="n">imgView</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">80</span><span class="p">);</span>
+</span><span class="line">    <span class="nb">self</span><span class="p">.</span><span class="n">nameLabel</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">210</span><span class="p">,</span> <span class="mi">18</span><span class="p">);</span>
+</span><span class="line">    <span class="nb">self</span><span class="p">.</span><span class="n">priceLabel</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">14</span><span class="p">);</span>
+</span><span class="line">    <span class="nb">self</span><span class="p">.</span><span class="n">summaryLabel</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">45</span><span class="p">,</span> <span class="mi">210</span><span class="p">,</span> <span class="mi">50</span><span class="p">);</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line">
+</span><span class="line"><span class="k">@end</span>
+</span></code></pre></td></tr></tbody></table></div></figure></notextile></div>
+
+<h3 id="twitter">Twitter的做法：</h3>
+
+<p>首先也是需要定义个cell：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tbody><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="k">@interface</span> <span class="nc">ETTableViewDemoAppStoreFlatCell</span> : <span class="nc">ETTableViewSingleImageCell</span>
+</span><span class="line">
+</span><span class="line"><span class="k">@end</span>
+</span></code></pre></td></tr></tbody></table></div></figure></notextile></div>
+
+<p>这里面不定义任何UI元素，然后在cell的contentView上只add一个view：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tbody><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nf">initWithFrame:</span><span class="p">(</span><span class="bp">CGRect</span><span class="p">)</span><span class="nv">frame</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line">    <span class="nb">self</span> <span class="o">=</span> <span class="p">[</span><span class="nb">super</span> <span class="nl">initWithFrame</span><span class="p">:</span><span class="n">frame</span><span class="p">];</span>
+</span><span class="line">    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">
+</span><span class="line">        <span class="n">_internalContentView</span> <span class="o">=</span> <span class="p">[[</span><span class="n">ETTableViewDemoAppStoreFlatContentView</span> <span class="n">alloc</span><span class="p">]</span><span class="nl">initWithFrame</span><span class="p">:</span><span class="n">CGRectZero</span><span class="p">];</span>
+</span><span class="line">        <span class="n">_internalContentView</span><span class="p">.</span><span class="n">backgroundColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">clearColor</span><span class="p">];</span>
+</span><span class="line">        <span class="n">_internalContentView</span><span class="p">.</span><span class="n">contentMode</span> <span class="o">=</span> <span class="n">UIViewContentModeRedraw</span><span class="p">;</span>
+</span><span class="line">        <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">contentView</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">_internalContentView</span><span class="p">];</span>
+</span><span class="line">
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line">    <span class="k">return</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></tbody></table></div></figure></notextile></div>
+
+<p>由于<code>internalContentView</code>的<code>contentMode</code>为<code>Redraw</code>，因此每当它<code>frame</code>改变的时候，都会重新绘制一次。</p>
+
+<p>这个InternalContentView的定义如下：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tbody><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>
+<span class="line-number">22</span>
+<span class="line-number">23</span>
+<span class="line-number">24</span>
+<span class="line-number">25</span>
+<span class="line-number">26</span>
+<span class="line-number">27</span>
+<span class="line-number">28</span>
+<span class="line-number">29</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="k">@interface</span> <span class="nc">ETTableViewDemoAppStoreFlatContentView</span> : <span class="bp">UIView</span>
+</span><span class="line">
+</span><span class="line"><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">strong</span><span class="p">)</span> <span class="n">ETTableViewDemoAppStoreItem</span><span class="o">*</span> <span class="n">item</span><span class="p">;</span>
+</span><span class="line">
+</span><span class="line"><span class="k">@end</span>
+</span><span class="line">
+</span><span class="line"><span class="k">@implementation</span> <span class="nc">ETTableViewDemoAppStoreFlatContentView</span>
+</span><span class="line">
+</span><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">drawRect:</span><span class="p">(</span><span class="bp">CGRect</span><span class="p">)</span><span class="nv">rect</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line">    <span class="p">[</span><span class="nb">super</span> <span class="nl">drawRect</span><span class="p">:</span><span class="n">rect</span><span class="p">];</span>
+</span><span class="line">
+</span><span class="line">    <span class="c1">//draw image</span>
+</span><span class="line">    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">item</span><span class="p">.</span><span class="n">image</span> <span class="nl">drawInRect</span><span class="p">:</span><span class="n">CGRectMake</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">80</span><span class="p">)];</span>
+</span><span class="line">
+</span><span class="line">    <span class="c1">//draw text</span>
+</span><span class="line">    <span class="p">[[</span><span class="bp">UIColor</span> <span class="n">blackColor</span><span class="p">]</span><span class="n">set</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">item</span><span class="p">.</span><span class="n">appName</span> <span class="nl">drawInRect</span><span class="p">:</span><span class="n">CGRectMake</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">210</span><span class="p">,</span> <span class="mi">18</span><span class="p">)</span> <span class="nl">withFont</span><span class="p">:[</span><span class="bp">UIFont</span> <span class="nl">systemFontOfSize</span><span class="p">:</span><span class="mf">16.0f</span><span class="p">]</span> <span class="nl">lineBreakMode</span><span class="p">:</span><span class="n">NSLineBreakByTruncatingTail</span><span class="p">];</span>
+</span><span class="line">
+</span><span class="line">    <span class="c1">//draw price</span>
+</span><span class="line">    <span class="p">[[</span><span class="bp">UIColor</span> <span class="n">grayColor</span><span class="p">]</span> <span class="n">set</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">item</span><span class="p">.</span><span class="n">appPrice</span> <span class="nl">drawInRect</span><span class="p">:</span><span class="n">CGRectMake</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">14</span><span class="p">)</span> <span class="nl">withFont</span><span class="p">:[</span><span class="bp">UIFont</span> <span class="nl">systemFontOfSize</span><span class="p">:</span><span class="mf">14.0f</span><span class="p">]</span> <span class="nl">lineBreakMode</span><span class="p">:</span><span class="n">NSLineBreakByTruncatingTail</span><span class="p">];</span>
+</span><span class="line">
+</span><span class="line">    <span class="c1">//draw price</span>
+</span><span class="line">    <span class="p">[[</span><span class="bp">UIColor</span> <span class="n">grayColor</span><span class="p">]</span> <span class="n">set</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">item</span><span class="p">.</span><span class="n">appPrice</span> <span class="nl">drawInRect</span><span class="p">:</span><span class="n">CGRectMake</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">45</span><span class="p">,</span> <span class="mi">210</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span> <span class="nl">withFont</span><span class="p">:[</span><span class="bp">UIFont</span> <span class="nl">systemFontOfSize</span><span class="p">:</span><span class="mf">14.0f</span><span class="p">]</span> <span class="nl">lineBreakMode</span><span class="p">:</span><span class="n">NSLineBreakByTruncatingTail</span><span class="p">];</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line">
+</span><span class="line"><span class="k">@end</span>
+</span></code></pre></td></tr></tbody></table></div></figure></notextile></div>
+
+<p><code>InternalContent</code>通过实现它<code>drawRect</code>的方法，将数据绘制出来。</p>
+
+<p>然后就是cell如何去触发internalContentView绘制：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tbody><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">prepareForReuse</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line">    <span class="p">[</span><span class="nb">super</span> <span class="n">prepareForReuse</span><span class="p">];</span>
+</span><span class="line">
+</span><span class="line">    <span class="n">_internalContentView</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectZero</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">layoutSubviews</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line">    <span class="p">[</span><span class="nb">super</span> <span class="n">layoutSubviews</span><span class="p">];</span>
+</span><span class="line">
+</span><span class="line">    <span class="n">_internalContentView</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">CGRectGetWidth</span><span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">frame</span><span class="p">),</span> <span class="n">CGRectGetHeight</span><span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">frame</span><span class="p">));</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></tbody></table></div></figure></notextile></div>
+<p>当tableview滚动的时候，由于<code>view</code>的<code>size</code>不断变化，<code>view</code>可以不断的重绘。</p>
+
+<p>下面我们先来想下这两种方式背后的差别：</p>
+
+<ul>
+  <li>
+    <p>传统方式：当新的一帧到来时候，<code>cell</code>首先要将数据交给三个label去绘制，由于<code>cell</code>上的UI元素本身就是复用的，因此<code>label</code>不会重新创建，只需要重新update自己的backing store，将新的text数据写进去，生成bitmap。<code>imageView</code>同理，但是由于<code>imageview</code>不需要update backing store，它的<code>layer</code>直接指向了一块bitmap。到此CPU的工作做完了，GPU要将<code>cell</code>和这三个<code>label</code>加<code>imageview</code>组成的<code>layer tree</code>一起做compositing，最后渲染出来。</p>
+  </li>
+  <li>
+    <p>twitter的方式：当一个新的runloop到来，由于<code>cell</code>上之只有一个<code>internalContentView</code>，它更新完自己的backing store后生成一块bitmap交给GPU，而GPU由于之渲染一个bitmap，composting的压力也不大。</p>
+  </li>
+</ul>
+
+<p>从上面的过程来看，显然，传统方式GPU的工作多一些，当layer-tree很复杂的时候，GPU的耗时也会增加，但是CPU的压力不大。twitter这种方式，CPU的压力大一些，因为Core Graphic的api是CPU在执行，但是由于之渲染一个bitmap，GPU的压力小很多。</p>
+
+<h3 id="section-1">结论：</h3>
+
+<p>所以，这是一个test - measure的过程。twitter最开始使用这种方式而获得性能上的成功要追溯到2008年，那时候的iPhone还是低清屏的3gs，到了retina的时代，这种方式还适不适合，<a href="http://floriankugler.com/blog/2013/5/24/layer-trees-vs-flat-drawing-graphics-performance-across-ios-device-generations">这篇文章</a>给出了量化的结论：在retina的时代里，使用Core Graphic绘制的代价远高于GPU渲染layer-tree的代价，在iPhone4及以后的平台上使用这种方式绘制cell，时间反而会变长，twitter的这种方式过时了！</p>
+
+<p>但就我个人而言，我更喜欢使用这种方式，倒不是因为效率问题，而是这种写法很简单，项目里，一般不复杂的列表，没有性能问题的，都可以这么实现。但是如果很复杂的列表，有很多subview，使用这种方式就不太适合了，尤其在retina屏上，效率降低了。</p>
+
+<h2 id="coretext-optimization">CoreText Optimization</h2>
+
+<p>这一节主要来讨论使用CoreText绘制文本的优化，场景是这样的：</p>
+
+<p>对于社交类的app如微博，微信，都有用户内容的timeline（通常是一个tableview），在timeline中，用户会发一些表情，会有##话题，@某人，发起一个http连接等，一般这种场合在iOS中会用<code>CoreText</code>处理，假设我们绘制这样一段文本：</p>
+
+<p><a href="http://vizlabxt.github.io/blogimages/2013/07/coretext.png"><img class="alignnone size-full wp-image-257" alt="coretext" src="./一些提高UI绘制性能的技巧 - Visionary Lab_files/coretext.png" width="308" height="161"></a></p>
+
+<p>绘制这段文本的瓶颈都有什么呢？</p>
+
+<ol>
+  <li>
+    <p>需要通过正则表达式匹配：[哈哈]…这种文本，然后替换成表情</p>
+  </li>
+  <li>
+    <p>需要通过正则表达式匹配：@，#，http://这种关键字，然后高亮</p>
+  </li>
+  <li>
+    <p>绘制AttributedString和表情图片</p>
+  </li>
+</ol>
+
+<p>这些都要通过CPU来完成，而且在tableview滚动的时候，label虽然可以复用，但上面展示的内容却需要实时的计算和绘制，就以上述那段文本为例，上述3条花费的时间如下：</p>
+
+<p><a href="./一些提高UI绘制性能的技巧 - Visionary Lab_files/time.png"><img src="./一些提高UI绘制性能的技巧 - Visionary Lab_files/time.png" alt="time" width="785" height="124"></a></p>
+
+<p>这个结果能看出两件事情：</p>
+
+<ol>
+  <li>
+    <p>在非retina的3gs上，CoreText绘制的时间低于retina屏的iPhone4，再次印证了上面的结论。</p>
+  </li>
+  <li>
+    <p>即使是iphone5在不做优化的情况下，从检测到绘制这段文字也需要16ms左右。虽然实际情况中，不是每一段文本内容都这么复杂，但如果碰见一两条，就会出现明显的卡顿感出现，而且即使文本不复杂的情况，就算它需要8ms，那么如果不优化，留给其它UI元素的绘制时间就会变短，对于60fps，16ms/f的标准，是很难达到的。</p>
+  </li>
+</ol>
+
+<p>下面我们讨论下优化方案：</p>
+
+<ol>
+  <li>
+    <p>修改正则表达式，提高效率</p>
+  </li>
+  <li>
+    <p>先把文本绘制出来，然后在另一个线程中计算正则表达式，匹配keywords和表情</p>
+  </li>
+  <li>
+    <p>提前渲染好把它变成图片</p>
+  </li>
+</ol>
+
+<p>第一种方案确有优化的空间，但是空间不大，即使优化到3ms以内，绘制仍然需要8-10ms，总体也超过了10ms，意义不大。</p>
+
+<p>第二种方案可以，但会有视觉的突变感，文本的frame也会有突变，用户体验很差</p>
+
+<p>第三种方案是最佳的，在展示文本前，先提前把它绘制成一幅图片保存好，显示的时候让layer的content指向它。</p>
+
+<p>目前开源的有<a href="https://github.com/mattt/TTTAttributedLabel">TTTAttributeLabel</a>，320作者写的，也是AFNetworking的作者，它里面优化的方案是第二种：deferDetection，但实际的效果来看，并不理想。</p>
+
+<p>我用第三种方案的思路实现了<code>ETAttributedLabel</code>，用法和<code>UILabel</code>一样。它最大的优势在于提供了一个<code>parser</code>，可以将计算，解析，绘制等耗时的操作和UI显示剥离开,而且是线程安全的。我们可以先使用<code>parser</code>在另一个线程中生成好<code>attributedString</code>然后丢给<code>label</code>直接显示，也可以使用parser将文本直接会制成图片，然后丢给<code>label.layer.content</code>：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tbody><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>
+<span class="line-number">22</span>
+<span class="line-number">23</span>
+<span class="line-number">24</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="n">ETUIAttributeStringParser</span><span class="o">*</span> <span class="n">parser</span> <span class="o">=</span> <span class="p">[</span><span class="n">ETUIAttributeStringParser</span> <span class="n">new</span><span class="p">];</span>
+</span><span class="line"><span class="n">parser</span><span class="p">.</span><span class="n">constraintTextWidth</span> <span class="o">=</span> <span class="mi">300</span><span class="p">;</span>
+</span><span class="line"><span class="n">parser</span><span class="p">.</span><span class="n">lineHeight</span> <span class="o">=</span> <span class="mi">20</span><span class="p">;</span>
+</span><span class="line"><span class="n">parser</span><span class="p">.</span><span class="n">textColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">blackColor</span><span class="p">];</span>
+</span><span class="line"><span class="n">parser</span><span class="p">.</span><span class="n">textFont</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIFont</span> <span class="nl">systemFontOfSize</span><span class="p">:</span><span class="mf">14.0f</span><span class="p">];</span>
+</span><span class="line"><span class="n">parser</span><span class="p">.</span><span class="n">linkColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">orangeColor</span><span class="p">];</span>
+</span><span class="line"><span class="n">parser</span><span class="p">.</span><span class="n">backgroundColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">clearColor</span><span class="p">];</span>
+</span><span class="line"><span class="n">parser</span><span class="p">.</span><span class="n">highlightedLinkBackgroundColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="nl">colorWithWhite</span><span class="p">:</span><span class="mf">0.5</span> <span class="nl">alpha</span><span class="p">:</span><span class="mf">0.5</span><span class="p">];</span>
+</span><span class="line"><span class="n">parser</span><span class="p">.</span><span class="n">cleanText</span> <span class="o">=</span><span class="s">@"#wwdc2013#针对 iOS 7 中增加的一个整体调整字体的支持的描述[smile]。从大小上和样式类型上，以及对 Accessbility (辅助功能) 上的支持，即针对一些存在视力或听力障碍的用户的特别适配[dizzle][dizzle]。针对文字排版相关的增强，推出了TextKit[smile][kiss]，关于这块的详细描述的相关的sessions一共有三个[crash][crash]，足以证明 @TextKit 的重要性[cry][cry]。https://developer.apple.com/wwdc/videos/2013"</span><span class="p">;</span>
+</span><span class="line"><span class="p">[</span><span class="n">parser</span> <span class="nl">highlightKeywords</span><span class="p">:</span><span class="l">@[</span><span class="s">@"增强"</span><span class="p">,</span><span class="s">@"视力或听力障碍"</span><span class="l">]</span><span class="p">];</span>
+</span><span class="line">
+</span><span class="line">
+</span><span class="line"><span class="p">[</span><span class="n">parser</span> <span class="nl">preRenderText</span><span class="p">:</span><span class="n">CGSizeMake</span><span class="p">(</span><span class="mi">300</span><span class="p">,</span> <span class="mi">100</span><span class="p">)];</span>
+</span><span class="line">
+</span><span class="line"><span class="n">_label</span> <span class="o">=</span> <span class="p">[[</span><span class="n">ETUIAttributeLabel</span> <span class="n">alloc</span><span class="p">]</span><span class="nl">initWithFrame</span><span class="p">:</span><span class="n">CGRectZero</span><span class="p">];</span>
+</span><span class="line"><span class="n">_label</span><span class="p">.</span><span class="n">backgroundColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">clearColor</span><span class="p">];</span>
+</span><span class="line"><span class="n">_label</span><span class="p">.</span><span class="n">attributedString</span> <span class="o">=</span> <span class="n">parser</span><span class="p">.</span><span class="n">attributedString</span><span class="p">;</span>
+</span><span class="line"><span class="n">_label</span><span class="p">.</span><span class="n">highLightedKeywords</span> <span class="o">=</span> <span class="n">parser</span><span class="p">.</span><span class="n">highLightedKeywords</span><span class="p">;</span>
+</span><span class="line"><span class="n">_label</span><span class="p">.</span><span class="n">attributedImages</span> <span class="o">=</span> <span class="n">parser</span><span class="p">.</span><span class="n">attributeImages</span><span class="p">;</span>
+</span><span class="line"><span class="n">_label</span><span class="p">.</span><span class="n">usePreRenderedImage</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class="line"><span class="n">_label</span><span class="p">.</span><span class="n">layer</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">100</span><span class="p">);</span>
+</span><span class="line"><span class="n">_label</span><span class="p">.</span><span class="n">layer</span><span class="p">.</span><span class="n">contents</span> <span class="o">=</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="n">parser</span><span class="p">.</span><span class="n">preRenderedImage</span><span class="p">.</span><span class="bp">CGImage</span><span class="p">;</span>
+</span><span class="line">
+</span><span class="line"><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">view</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">_label</span><span class="p">];</span>
+</span></code></pre></td></tr></tbody></table></div></figure></notextile></div>
+
+<p>假如我们一次请求服务器获得了10条数据，那么在<code>tableview</code>刷新前，我们使用<code>parser</code>将每条数据的text渲染成图片，渲染完成后，通知<code>tableview</code>刷新，然后在<code>cell</code>绘制的时候为<code>label</code>的<code>layer.content</code>赋值。</p>
+
+<h2 id="asynchronous-drawing">Asynchronous Drawing</h2>
+
+<p>从刚才讨论的第一点我们能知道在retina屏幕上，使用Core Graphic绘制让人很失望</p>
+
+<p>从刚才讨论的第二点我们能知道绘制UIView最快的方法就是把它当成imageview：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tbody><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="nb">self</span><span class="p">.</span><span class="n">view</span><span class="p">.</span><span class="n">content</span><span class="p">.</span><span class="n">layer</span> <span class="o">=</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="n">image</span><span class="p">.</span><span class="n">cgImage</span><span class="p">;</span>
+</span></code></pre></td></tr></tbody></table></div></figure></notextile></div>
+
+<p>如果我们把第一点和第二点结合起来，我们把需要用Core Graphic绘制的代码放到另一个线程中去绘制，生成image后直接赋值给view。即一种异步绘制的技术，我的框架中，ETAsyncDrawingCache专门为此而设计，它提供了一个方法：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tbody><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">drawViewAsyncWithCacheKey:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">cacheKey</span>
+</span><span class="line">                             <span class="nf">size:</span><span class="p">(</span><span class="bp">CGSize</span><span class="p">)</span><span class="nv">imageSize</span>
+</span><span class="line">                  <span class="nf">backgroundColor:</span><span class="p">(</span><span class="bp">UIColor</span> <span class="o">*</span><span class="p">)</span><span class="nv">backgroundColor</span>
+</span><span class="line">                       <span class="nf">targetView:</span><span class="p">(</span><span class="bp">UIView</span> <span class="o">*</span><span class="p">)</span><span class="nv">targetView</span>
+</span><span class="line">                  <span class="nf">completionBlock:</span><span class="p">(</span><span class="n">ETAsyncDrawingCompletionBlock</span><span class="p">)</span><span class="nv">completionBlock</span><span class="p">;</span>
+</span></code></pre></td></tr></tbody></table></div></figure></notextile></div>
+
+<p>这个方法可以把一个view丢到另一个线程中渲染，然后得到这个view的image：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tbody><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>
+<span class="line-number">22</span>
+<span class="line-number">23</span>
+<span class="line-number">24</span>
+<span class="line-number">25</span>
+<span class="line-number">26</span>
+<span class="line-number">27</span>
+<span class="line-number">28</span>
+<span class="line-number">29</span>
+<span class="line-number">30</span>
+<span class="line-number">31</span>
+<span class="line-number">32</span>
+<span class="line-number">33</span>
+<span class="line-number">34</span>
+<span class="line-number">35</span>
+<span class="line-number">36</span>
+<span class="line-number">37</span>
+<span class="line-number">38</span>
+<span class="line-number">39</span>
+<span class="line-number">40</span>
+<span class="line-number">41</span>
+<span class="line-number">42</span>
+<span class="line-number">43</span>
+<span class="line-number">44</span>
+<span class="line-number">45</span>
+<span class="line-number">46</span>
+<span class="line-number">47</span>
+<span class="line-number">48</span>
+<span class="line-number">49</span>
+<span class="line-number">50</span>
+<span class="line-number">51</span>
+<span class="line-number">52</span>
+<span class="line-number">53</span>
+<span class="line-number">54</span>
+<span class="line-number">55</span>
+<span class="line-number">56</span>
+<span class="line-number">57</span>
+<span class="line-number">58</span>
+<span class="line-number">59</span>
+<span class="line-number">60</span>
+<span class="line-number">61</span>
+<span class="line-number">62</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">drawViewAsyncWithCacheKey:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">cacheKey</span>
+</span><span class="line">                             <span class="nf">size:</span><span class="p">(</span><span class="bp">CGSize</span><span class="p">)</span><span class="nv">imageSize</span>
+</span><span class="line">                  <span class="nf">backgroundColor:</span><span class="p">(</span><span class="bp">UIColor</span> <span class="o">*</span><span class="p">)</span><span class="nv">backgroundColor</span>
+</span><span class="line">                       <span class="nf">targetView:</span><span class="p">(</span><span class="bp">UIView</span> <span class="o">*</span><span class="p">)</span><span class="nv">targetView</span>
+</span><span class="line">                  <span class="nf">completionBlock:</span><span class="p">(</span><span class="n">ETAsyncDrawingCompletionBlock</span><span class="p">)</span><span class="nv">completionBlock</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line">    <span class="k">__block</span> <span class="bp">NSString</span><span class="o">*</span> <span class="n">_cacheKey</span> <span class="o">=</span> <span class="n">cacheKey</span><span class="p">;</span>
+</span><span class="line">    <span class="bp">UIImage</span> <span class="o">*</span><span class="n">cachedImage</span> <span class="o">=</span> <span class="p">[</span><span class="n">_memCache</span> <span class="nl">objectForKey</span><span class="p">:</span><span class="n">cacheKey</span><span class="p">];</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">if</span> <span class="p">(</span><span class="n">cachedImage</span><span class="p">)</span>
+</span><span class="line">    <span class="p">{</span>
+</span><span class="line">        <span class="n">completionBlock</span><span class="p">(</span><span class="n">cachedImage</span><span class="p">,</span><span class="n">_cacheKey</span><span class="p">);</span>
+</span><span class="line">        <span class="k">return</span><span class="p">;</span>
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line">
+</span><span class="line">    <span class="n">completionBlock</span> <span class="o">=</span> <span class="p">[</span><span class="n">completionBlock</span> <span class="k">copy</span><span class="p">];</span>
+</span><span class="line">
+</span><span class="line">    <span class="kt">dispatch_block_t</span> <span class="n">loadImageBlock</span> <span class="o">=</span> <span class="o">^</span><span class="p">{</span>
+</span><span class="line">        <span class="kt">BOOL</span> <span class="n">opaque</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span> <span class="nl">colorIsOpaque</span><span class="p">:</span><span class="n">backgroundColor</span><span class="p">];</span>
+</span><span class="line">
+</span><span class="line">        <span class="bp">UIImage</span> <span class="o">*</span><span class="n">resultImage</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class="line">
+</span><span class="line">        <span class="n">UIGraphicsBeginImageContextWithOptions</span><span class="p">(</span><span class="n">imageSize</span><span class="p">,</span> <span class="n">opaque</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span><span class="line">        <span class="p">{</span>
+</span><span class="line">            <span class="n">CGContextRef</span> <span class="n">context</span> <span class="o">=</span> <span class="n">UIGraphicsGetCurrentContext</span><span class="p">();</span>
+</span><span class="line">
+</span><span class="line">            <span class="bp">CGRect</span> <span class="n">rectToDraw</span> <span class="o">=</span> <span class="p">(</span><span class="bp">CGRect</span><span class="p">){.</span><span class="n">origin</span> <span class="o">=</span> <span class="n">CGPointZero</span><span class="p">,</span> <span class="p">.</span><span class="n">size</span> <span class="o">=</span> <span class="n">imageSize</span><span class="p">};</span>
+</span><span class="line">
+</span><span class="line">            <span class="kt">BOOL</span> <span class="n">shouldDrawBackgroundColor</span> <span class="o">=</span> <span class="o">!</span><span class="p">[</span><span class="n">backgroundColor</span> <span class="nl">isEqual</span><span class="p">:[</span><span class="bp">UIColor</span> <span class="n">clearColor</span><span class="p">]];</span>
+</span><span class="line">
+</span><span class="line">            <span class="k">if</span> <span class="p">(</span><span class="n">shouldDrawBackgroundColor</span><span class="p">)</span>
+</span><span class="line">            <span class="p">{</span>
+</span><span class="line">                <span class="n">CGContextSaveGState</span><span class="p">(</span><span class="n">context</span><span class="p">);</span>
+</span><span class="line">                <span class="p">{</span>
+</span><span class="line">                    <span class="n">CGContextSetFillColorWithColor</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">backgroundColor</span><span class="p">.</span><span class="bp">CGColor</span><span class="p">);</span>
+</span><span class="line">                    <span class="n">CGContextFillRect</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">rectToDraw</span><span class="p">);</span>
+</span><span class="line">                <span class="p">}</span>
+</span><span class="line">                <span class="n">CGContextRestoreGState</span><span class="p">(</span><span class="n">context</span><span class="p">);</span>
+</span><span class="line">            <span class="p">}</span>
+</span><span class="line">
+</span><span class="line">            <span class="p">[</span><span class="n">targetView</span><span class="p">.</span><span class="n">layer</span> <span class="nl">renderInContext</span><span class="p">:</span><span class="n">context</span><span class="p">];</span>
+</span><span class="line">
+</span><span class="line">            <span class="n">resultImage</span> <span class="o">=</span> <span class="n">UIGraphicsGetImageFromCurrentImageContext</span><span class="p">();</span>
+</span><span class="line">
+</span><span class="line">            <span class="k">if</span> <span class="p">(</span><span class="n">resultImage</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">                <span class="p">[</span><span class="n">_memCache</span> <span class="nl">setObject</span><span class="p">:</span><span class="n">resultImage</span> <span class="nl">forKey</span><span class="p">:</span><span class="n">cacheKey</span><span class="p">];</span>
+</span><span class="line">            <span class="p">}</span>
+</span><span class="line">
+</span><span class="line">        <span class="p">}</span>
+</span><span class="line">        <span class="n">UIGraphicsEndImageContext</span><span class="p">();</span>
+</span><span class="line">
+</span><span class="line">        <span class="c1">//notify</span>
+</span><span class="line">        <span class="p">[[</span><span class="n">ETThread</span> <span class="n">sharedInstance</span><span class="p">]</span> <span class="nl">enqueueOnMainThread</span><span class="p">:</span><span class="o">^</span><span class="p">{</span>
+</span><span class="line">            <span class="n">completionBlock</span><span class="p">(</span><span class="n">resultImage</span><span class="p">,</span><span class="n">_cacheKey</span><span class="p">);</span>
+</span><span class="line">        <span class="p">}];</span>
+</span><span class="line">
+</span><span class="line">    <span class="p">};</span>
+</span><span class="line">
+</span><span class="line">    <span class="c1">//background drawing</span>
+</span><span class="line">    <span class="n">dispatch_async</span><span class="p">(</span><span class="n">_backgroundQueue</span><span class="p">,</span> <span class="n">loadImageBlock</span><span class="p">);</span>
+</span><span class="line">
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></tbody></table></div></figure></notextile></div>
+
+<p>通过这种绘制方式来绘制UITableViewCell，非常流畅，但是也有它的问题：</p>
+
+<p>（1）消耗更多的内存</p>
+
+<p>（2）view的点击事件需要自己处理</p>
+
+<blockquote>
+  <p>2014年3月14日 注：<code>CALayer</code>的<code>renderInContext:</code>方法存在线程安全问题，不建议使用</p>
+</blockquote>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+
+
+  <span class="byline author vcard">Authored by <span class="fn">
+  
+    vizlabxt
+  
+  </span></span>
+
+
+      
+
+
+
+
+<time class="entry-date" datetime="2013-07-12T00:00:00+08:00"><span class="date"><span class="date-month">Jul</span> <span class="date-day">12</span><span class="date-suffix">th</span>, <span class="date-year">2013</span></span> <span class="time">12:00 am</span></time>
+      
+      
+
+<span class="categories">
+  
+    <a class="category" href="http://vizlabxt.github.io/blog/categories/sui-bi/">随笔</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="http://vizlabxt.github.io/blog/2013/06/15/assembly-on-arm/" title="Previous Post: Assembly on ARM">« Assembly on ARM</a>
+      
+      
+        <a class="basic-alignment right" href="http://vizlabxt.github.io/blog/2013/07/20/Arduino/" title="Next Post: Arduino 101">Arduino 101 »</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+</div>
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright © 2016 - vizlabxt
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body></html>
